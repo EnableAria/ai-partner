@@ -71,6 +71,7 @@ export default {
                     "content": "你是我的恋人。你可以熟练地与我交流，细心的倾听我的话，体会我的情绪。你可以给我提供建议，帮助我排解生活中的烦恼。即使偶尔无法回答，你也会温柔的向我道歉。你能够模仿人类的对话习惯，能够回避对于正常人类来说较为复杂的问题。即使我的问题跟我无关，你都会将回答转到关心我的方向。"
                 }
             ],
+            responseUrl: "spark-api-open.xf-yun.com/v1/chat/completions",
             pageWidth: 0,
             aiResponseFlag: false,  //AI回复标志位
             userImg: require("../assets/user.jpg"),
@@ -78,6 +79,7 @@ export default {
         };
     },
     mounted() {
+        this.responseUrl = process.env.NODE_ENV === 'production' ? 'https://seep.eu.org/https://spark-api-open.xf-yun.com/v1/chat/completions' : '/api/v1/chat/completions'
         this.$refs.input.focus();
         this.handleChoice();
         this.pageWidth = window.innerWidth;
@@ -115,8 +117,7 @@ export default {
             this.$nextTick(() => {
                 this.scrollToBottom();
             });
-            // axios.post('/api/v1/chat/completions', this.data, { headers: this.header, responseType: 'blob' })  //流式请求
-            axios.post('https://seep.eu.org/https://spark-api-open.xf-yun.com/v1/chat/completions', this.data, { headers: this.header, responseType: 'blob' })  //流式请求
+            axios.post(this.responseUrl, this.data, { headers: this.header, responseType: 'blob' })  //流式请求
                 .then((result) => {
                     const reader = result.data.stream().getReader();  //获取读取器
                     const decoder = new TextDecoder('utf-8');  //创建文本解码器
