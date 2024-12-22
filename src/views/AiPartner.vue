@@ -115,8 +115,8 @@ export default {
             this.$nextTick(() => {
                 this.scrollToBottom();
             });
-            axios.post('/api/v1/chat/completions', this.data, { headers: this.header, responseType: 'blob' })  //流式请求
-            // axios.post('https://spark-api-open.xf-yun.com/v1/chat/completions', this.data, { headers: this.header, responseType: 'blob' })  //流式请求
+            // axios.post('/api/v1/chat/completions', this.data, { headers: this.header, responseType: 'blob' })  //流式请求
+            axios.post('https://seep.eu.org/https://spark-api-open.xf-yun.com/v1/chat/completions', this.data, { headers: this.header, responseType: 'blob' })  //流式请求
                 .then((result) => {
                     const reader = result.data.stream().getReader();  //获取读取器
                     const decoder = new TextDecoder('utf-8');  //创建文本解码器
