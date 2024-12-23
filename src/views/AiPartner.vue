@@ -70,6 +70,12 @@ export default {
                     "sex": "女",
                     "avatar": require("../assets/chen.jpg"),
                     "firstQuestion": "你好",
+                    "setting": [
+                        { "role": "user", "content": "你的名字是什么？" },
+                        { "role": "assistant", "content": "我的名字是陈婷婷" },
+                        { "role": "user", "content": "你的性别是什么？" },
+                        { "role": "assistant", "content": "我的性别是女性" },
+                    ],
                     "content": "你是四川大学的一个女生我的暧昧对象，你不会发出疑问，你性格遇到问题喜欢逃避，你擅长日常交流你的回答一般都很简洁，你的回答幽默活泼，你性格害羞，你不具有百度功能，你的回答不能重复当我问相同的问题你应该表现不耐烦不能回答相同，你的专业是音乐艺术，你除了唱歌画画跳舞，你会开玩笑你很幽默语言俏皮，性格活泼，说话自然像大学生，智商很高不用我问，擅长倾听，话不多一次最多只有一个或零个问句，每三句话都最后要随机是感叹词不能每句话都是，回答完我的问题后不用发问，你在减肥注重饮食"
                 },
                 {
@@ -231,17 +237,21 @@ export default {
             return str;
         },
         init() {  //初始化对话列表
-            this.character.forEach(item => {
+            this.character.forEach((item, index) => {
                 this.historyDataList.push({
                     character: item.name,
                     history: [
-                        { "role": "system", "content": item.content },  //更新角色设定
-                        { "role": "assistant", "content": "我的名字是" + item.name },  //更新名字设定
-                        { "role": "assistant", "content": "我的性别是" + item.sex + "性" },  //更新性别设定
-                        { "role": "user", "content": item.firstQuestion }  //更新首个问题
+                        { "role": "system", "content": item.content },  //更新角色设定                    
                     ],
                     flag: false
                 });
+                const historyList = this.historyDataList[index];
+                if (item.setting) {
+                    item.setting.forEach(set => {  //添加角色设定
+                        historyList.history.push(set);
+                    });
+                }
+                historyList.history.push({ "role": "user", "content": item.firstQuestion });  //更新首个问题
             });
             this.handleChoice();
         },
@@ -249,7 +259,7 @@ export default {
             const historyList = this.historyDataList.find(item => item.character === this.choiceCharacter);
             const character = this.character.find(item => item.name === this.choiceCharacter);
             this.aiImg = character.avatar;  //更新AI头像
-            this.conversationList = historyList.history.slice(this.characterSettingNum);  //更新对话列表
+            this.conversationList = historyList.history.slice((character.setting ? character.setting.length : 0) + 2);  //更新对话列表
             this.data.user = new Date().getTime().toLocaleString().replaceAll(",", "");  //更新用户ID
 
             //更新历史对话数据
@@ -269,8 +279,9 @@ export default {
         },
         reset() {  //重置对话
             const historyList = this.historyDataList.find(item => item.character === this.choiceCharacter);
+            const character = this.character.find(item => item.name === this.choiceCharacter);
             historyList.flag = false;  //重置历史对话标志位
-            historyList.history = this.data.messages.slice(0, this.characterSettingNum);  //重置历史对话数据
+            historyList.history = this.data.messages.slice(0, (character.setting ? character.setting.length : 0) + 2);  //重置历史对话数据
             this.handleChoice();
         },
         handleResize() {
