@@ -10,7 +10,7 @@
                     </el-option>
                 </el-select>
                 <el-tooltip class="item" effect="dark" content="重置对话" placement="bottom">
-                    <i id="delete_button" class="el-icon-delete" @click="reset"/>
+                    <i id="delete_button" class="el-icon-delete" @click="reset" />
                 </el-tooltip>
             </el-header>
             <el-main class="main-container">
@@ -49,6 +49,7 @@ export default {
             userInput: "",
             conversationList: [],
             historyDataList: [],
+            characterSettingNum: 4,  //初始设定数量
             data: {
                 "model": "lite",
                 "user": "114514",
@@ -56,10 +57,7 @@ export default {
                 "max_tokens": 4096,
                 "top_k": 4,
                 "temperature": 0.5,
-                "messages": [
-                    { "role": "system", "content": "" },
-                    { "role": "user", "content": "" }
-                ]
+                "messages": []
             },
             header: {
                 "Content-Type": "application/json",
@@ -139,12 +137,15 @@ export default {
                     role: "user",
                     content: this.stringReplace(this.userInput)
                 });
-                this.userInput = "";
+
                 this.$nextTick(() => {
                     this.scrollToBottom();
                 });
 
                 this.getAiResponse();
+
+                this.data.messages.slice(-1)[0].content = this.userInput;
+                this.userInput = "";
             }
         },
         getAiResponse() {  //POST请求，获取AI回复
@@ -199,9 +200,9 @@ export default {
                                                     content: aiMessage.content
                                                 });
                                                 if (navigator.userAgent.indexOf('Mobile') === -1) {  //非移动端获取输入焦点
-                                                    setTimeout(() => {
+                                                    this.$nextTick(() => {
                                                         this.$refs.input.focus();
-                                                    }, 1);
+                                                    });
                                                 }
                                             }
                                         }, index * 200); //流式更新延迟
@@ -230,16 +231,17 @@ export default {
             return str;
         },
         init() {  //初始化对话列表
-            this.character.forEach((item, index) => {
+            this.character.forEach(item => {
                 this.historyDataList.push({
                     character: item.name,
-                    history: this.data.messages.slice(0),
+                    history: [
+                        { "role": "system", "content": item.content },  //更新角色设定
+                        { "role": "assistant", "content": "我的名字是" + item.name },  //更新名字设定
+                        { "role": "assistant", "content": "我的性别是" + item.sex + "性" },  //更新性别设定
+                        { "role": "user", "content": item.firstQuestion }  //更新首个问题
+                    ],
                     flag: false
                 });
-                const historyList = this.historyDataList[index];
-                const character = this.character[index];
-                historyList.history[0].content = character.content;  //更新角色设定
-                historyList.history[1].content = character.firstQuestion;  //更新首个问题
             });
             this.handleChoice();
         },
@@ -247,7 +249,7 @@ export default {
             const historyList = this.historyDataList.find(item => item.character === this.choiceCharacter);
             const character = this.character.find(item => item.name === this.choiceCharacter);
             this.aiImg = character.avatar;  //更新AI头像
-            this.conversationList = historyList.history.slice(2);  //更新对话列表
+            this.conversationList = historyList.history.slice(this.characterSettingNum);  //更新对话列表
             this.data.user = new Date().getTime().toLocaleString().replaceAll(",", "");  //更新用户ID
 
             //更新历史对话数据
@@ -259,16 +261,16 @@ export default {
             }
             else {
                 if (navigator.userAgent.indexOf('Mobile') === -1) {  //非移动端获取输入焦点
-                    setTimeout(() => {
+                    this.$nextTick(() => {
                         this.$refs.input.focus();
-                    }, 1);
+                    });
                 }
             }
         },
         reset() {  //重置对话
             const historyList = this.historyDataList.find(item => item.character === this.choiceCharacter);
             historyList.flag = false;  //重置历史对话标志位
-            historyList.history = this.data.messages.slice(0, 2);  //重置历史对话数据
+            historyList.history = this.data.messages.slice(0, this.characterSettingNum);  //重置历史对话数据
             this.handleChoice();
         },
         handleResize() {
