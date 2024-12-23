@@ -2,7 +2,7 @@
     <el-container class="container">
         <div class="chat-container">
             <el-header class="header-container">
-                <el-select v-model="choiceCharacter" placeholder="选择模型" id="title" @change="handleChoice">
+                <el-select v-model="choiceCharacter" placeholder="选择模型" id="title" @change="handleChoice" :disabled="aiResponseFlag">
                     <el-option v-for="item in character" :key="item.name" :label="item.name" :value="item.name"
                         style="text-align: center;">
                     </el-option>
@@ -11,8 +11,8 @@
             <el-main class="main-container">
                 <div class="messages-container">
                     <div v-for="(row, index) in conversationList" :key="index"
-                        :class="'message ' + (row.type === 'user' ? 'user-message' : 'ai-message')">
-                        <el-avatar :size="50" :src="row.type === 'user' ? userImg : aiImg"></el-avatar>
+                        :class="'message ' + (row.role === 'user' ? 'user-message' : 'ai-message')">
+                        <el-avatar :size="50" :src="row.role === 'user' ? userImg : aiImg"></el-avatar>
                         <div style="display: inline-block;" class="content">
                             <span>{{ row.content }}<i v-if="row.loading === true" class="el-icon-loading" /></span>
                         </div>
@@ -43,6 +43,7 @@ export default {
         return {
             userInput: "",
             conversationList: [],
+            historyDataList: [],
             data: {
                 "model": "lite",
                 "user": "114514",
@@ -108,7 +109,8 @@ export default {
     mounted() {
         this.responseUrl = process.env.NODE_ENV === 'production' ? 'https://seep.eu.org/https://spark-api-open.xf-yun.com/v1/chat/completions' : '/api/v1/chat/completions'
         this.$refs.input.focus();
-        this.handleChoice();
+        this.init();
+        // this.handleChoice();
         this.pageWidth = window.innerWidth;
         window.addEventListener('resize', this.handleResize);
     },
@@ -117,7 +119,7 @@ export default {
             if (this.userInput) {
                 //更新用户消息
                 this.conversationList.push({
-                    type: "user",
+                    role: "user",
                     content: this.userInput
                 });
 
@@ -137,7 +139,7 @@ export default {
             //更新AI初始消息
             this.aiResponseFlag = true;
             this.conversationList.push({
-                type: "ai",
+                role: "assistant",
                 content: "",
                 loading: true
             });
@@ -213,16 +215,36 @@ export default {
             str = str.replace("名字", "身份的名字");
             return str;
         },
+        init() {  //初始化对话列表
+            this.character.forEach((item, index) => {
+                this.historyDataList.push({
+                    character: item.name,
+                    history: this.data.messages.slice(0),
+                    flag: false
+                });
+                const historyList = this.historyDataList[index];
+                const character = this.character[index];
+                historyList.history[0].content = character.content;  //更新角色设定
+                historyList.history[1].content = character.firstQuestion;  //更新首个问题
+            });
+            console.log(this.historyDataList);
+            this.handleChoice();
+        },
         handleChoice() {  //切换模型
-            this.conversationList = [];  //清空对话列表
-            this.data.user = new Date().getTime().toLocaleString().replaceAll(",", "");  //更新用户ID
-            this.data.messages = this.data.messages.slice(0, 2);
-
+            const historyList = this.historyDataList.find(item => item.character === this.choiceCharacter);
             const character = this.character.find(item => item.name === this.choiceCharacter);
-            this.data.messages[0].content = character.content;  //更新角色设定
-            this.data.messages[1].content = character.firstQuestion;  //更新首个问题
-            this.aiImg = character.avatar;
-            this.getAiResponse();
+            this.aiImg = character.avatar;  //更新AI头像
+            this.conversationList = historyList.history.slice(2);  //更新对话列表
+            this.data.user = new Date().getTime().toLocaleString().replaceAll(",", "");  //更新用户ID
+
+            //更新历史对话数据
+            this.data.messages = historyList.history;
+            console.log(historyList.history);
+            if (!historyList.flag) {
+                historyList.flag = true;
+                this.conversationList = [];
+                this.getAiResponse();
+            }
         },
         handleResize() {
             this.pageWidth = window.innerWidth;
