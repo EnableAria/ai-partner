@@ -265,10 +265,11 @@ export default {
                                         //解析JSON数据
                                         const jsonData = JSON.parse(cleanMessage);
                                         const content = jsonData.choices[0].delta.content;
-
                                         //更新AI消息
                                         setTimeout(() => {
-                                            aiMessage.content += content;  //新内容追加
+                                            if(content != undefined){
+                                                aiMessage.content += content;  //新内容追加
+                                            }
                                             this.$nextTick(() => {
                                                 this.scrollToBottom();
                                             });
